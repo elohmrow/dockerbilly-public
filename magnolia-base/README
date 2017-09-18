@@ -1,0 +1,6 @@
+docker build .
+
+docker commit -m "add and wire java, tomcat, wget, magnolia" -a "Bradley Andersen" $HASH $NAME
+
+docker run -it $NAME
+
