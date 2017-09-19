@@ -11,8 +11,12 @@ FROM centos:latest
 # add wget
 # clean up
 RUN yum -y update && yum -y install java wget && yum clean all
+# ^ best practice alert: that's a bad idea:
+#       imagine this gets run later, and we get a diff version of a library?
+#       imagine this gets run later, and we get a diff version of a library, and that breaks the build?
 
-# due to heavy problems with systemd / systemctl inside containers
+# due to heavy problems with systemd / systemctl inside containers:
+# https://github.com/gdraheim/docker-systemctl-replacement
 # get tomcat by hand and use that for more control
 RUN mkdir -p /tomcat
 
@@ -25,20 +29,22 @@ WORKDIR $CATALINA_HOME
 # fetch tomcat
 ADD get_tomcat.sh $CATALINA_HOME
 RUN chmod +x $CATALINA_HOME/get_tomcat.sh
-CMD ["$CATALINA_HOME/get_tomcat.sh"]
+RUN $CATALINA_HOME/get_tomcat.sh
 
 # move some things around
-COPY $CATALINA_HOME/apache-tomcat-8.5.20/* $CATALINA_HOME
+RUN mv $CATALINA_HOME/apache-tomcat-8.5.20/* $CATALINA_HOME/
 RUN rm -rf $CATALINA_HOME/apache-tomcat-8.5.20
 
 # fetch latest magnolia into tomcat
 WORKDIR $CATALINA_HOME/webapps
 ADD get_latest_magnolia.sh $CATALINA_HOME/webapps
 RUN chmod +x $CATALINA_HOME/webapps/get_latest_magnolia.sh
-CMD ["$CATALINA_HOME/webapps/get_latest_magnolia.sh"]
+RUN $CATALINA_HOME/webapps/get_latest_magnolia.sh
 
 # start tomcat with default settings
-CMD ["$CATALINA_HOME/bin/catalina.sh run"]
+#RUN $CATALINA_HOME/bin/catalina.sh run
+# ^ only the last 'CMD' runs if > 1 'CMD' in a Dockerfile!
+# and it's only going to run anyway if we actually make / use later
 
 # Expose the ports
-EXPOSE 8080
+#EXPOSE 8080
