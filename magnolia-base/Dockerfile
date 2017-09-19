@@ -8,25 +8,37 @@ FROM centos:latest
 
 # update the centos system
 # add latest java
-# add latest tomcat
 # add wget
 # clean up
-RUN yum -y update && yum -y install java tomcat wget && yum clean all
+RUN yum -y update && yum -y install java wget && yum clean all
+
+# due to heavy problems with systemd / systemctl inside containers
+# get tomcat by hand and use that for more control
+RUN mkdir -p /tomcat
 
 # where is tomcat
-ENV CATALINA_BASE /var/lib/tomcat
+ENV CATALINA_HOME /tomcat
 
 # change to where tomcat is
-WORKDIR $CATALINA_BASE/webapps
+WORKDIR $CATALINA_HOME
+
+# fetch tomcat
+ADD get_tomcat.sh $CATALINA_HOME
+RUN chmod +x $CATALINA_HOME/get_tomcat.sh
+CMD ["$CATALINA_HOME/get_tomcat.sh"]
+
+# move some things around
+COPY $CATALINA_HOME/apache-tomcat-8.5.20/* $CATALINA_HOME
+RUN rm -rf $CATALINA_HOME/apache-tomcat-8.5.20
 
 # fetch latest magnolia into tomcat
-ADD get_latest_magnolia.sh /usr/local/bin/get_latest_magnolia.sh
-RUN chmod +x /usr/local/bin/get_latest_magnolia.sh
-CMD ["/usr/local/bin/get_latest_magnolia.sh"]
+WORKDIR $CATALINA_HOME/webapps
+ADD get_latest_magnolia.sh $CATALINA_HOME/webapps
+RUN chmod +x $CATALINA_HOME/webapps/get_latest_magnolia.sh
+CMD ["$CATALINA_HOME/webapps/get_latest_magnolia.sh"]
 
 # start tomcat with default settings
-ENTRYPOINT ["/usr/share/tomcat/bin/catalina.sh", "run"]
-CMD [""]
+CMD ["$CATALINA_HOME/bin/catalina.sh run"]
 
 # Expose the ports
 EXPOSE 8080
