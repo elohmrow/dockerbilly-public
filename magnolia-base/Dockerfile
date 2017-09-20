@@ -1,6 +1,8 @@
 # #
 # very simple first try at making magnolia using docker
 #   latest {centos, java, tomcat, magnolia} + default H2
+#   no best practices
+#   see README for how to run it
 # #
 
 # let's build upon centos
@@ -22,6 +24,8 @@ RUN mkdir -p /tomcat
 
 # where is tomcat
 ENV CATALINA_HOME /tomcat
+ENV PATH $CATALINA_HOME/bin:$PATH
+# ^ critical
 
 # change to where tomcat is
 WORKDIR $CATALINA_HOME
@@ -30,10 +34,13 @@ WORKDIR $CATALINA_HOME
 ADD get_tomcat.sh $CATALINA_HOME
 RUN chmod +x $CATALINA_HOME/get_tomcat.sh
 RUN $CATALINA_HOME/get_tomcat.sh
+# could combine this and the next step by using bundle
+# would have side effect of leveraging magnolia_control.{bat|sh}
 
 # move some things around
 RUN mv $CATALINA_HOME/apache-tomcat-8.5.20/* $CATALINA_HOME/
 RUN rm -rf $CATALINA_HOME/apache-tomcat-8.5.20
+# ^ could be done better
 
 # fetch latest magnolia into tomcat
 WORKDIR $CATALINA_HOME/webapps
@@ -41,10 +48,7 @@ ADD get_latest_magnolia.sh $CATALINA_HOME/webapps
 RUN chmod +x $CATALINA_HOME/webapps/get_latest_magnolia.sh
 RUN $CATALINA_HOME/webapps/get_latest_magnolia.sh
 
-# start tomcat with default settings
-#RUN $CATALINA_HOME/bin/catalina.sh run
-# ^ only the last 'CMD' runs if > 1 'CMD' in a Dockerfile!
-# and it's only going to run anyway if we actually make / use later
-
 # Expose the ports
-#EXPOSE 8080
+EXPOSE 8080
+
+CMD ["catalina.sh", "run"]
